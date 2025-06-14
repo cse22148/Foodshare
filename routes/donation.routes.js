@@ -51,11 +51,15 @@ router.post("/donate", verifyToken, async (req, res) => {
 router.get("/pending/:role", verifyToken, async (req, res) => {
   try {
     const roleParam = req.params.role.toLowerCase();
+    const userRole  = req.user.role?.toLowerCase();
+
+    console.log("👉 Role Param:", roleParam);
+    console.log("👉 JWT Role:", userRole);
 
     if (!validRoles.includes(roleParam))
       return res.status(400).json({ message: "Invalid role in URL" });
 
-    if (req.user.role !== roleParam)
+    if (userRole !== roleParam)
       return res.status(403).json({ message: "Forbidden: view your role only" });
 
     const donations = await Donation.find({ role: roleParam, status: "Pending" });
@@ -65,6 +69,7 @@ router.get("/pending/:role", verifyToken, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 /* ------------------------------------------------------------------
  * 3.  Mark donation COLLECTED  (NGO / BIOGAS action button)

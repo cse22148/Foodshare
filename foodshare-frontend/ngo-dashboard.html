@@ -79,7 +79,7 @@
       setTimeout(() => toast.classList.add("hidden"), 3000);
     }
 
-    const API_BASE = "http://localhost:5000/api/donations";
+    const API_BASE = "https://foodshare-app.onrender.com";
     const token = localStorage.getItem("ngo_token");
 
     if (!token) return;
@@ -125,17 +125,19 @@
 
     async function loadPendingDonations() {
       try {
-        const res = await fetch(`${API_BASE}/pending/ngo`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        const res = await fetch(`${API_BASE}/api/donations/pending/ngo`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
 
         if (!res.ok) throw new Error("Failed to fetch pending donations");
 
         const data = await res.json();
-        renderPending(data);
+        console.log("✅ Pending NGO Donations:", data);
+        renderPending(data);  // 🔧 This line was missing
       } catch (err) {
         console.error("Error loading pending donations:", err);
-        showToast("Could not load pending donations", "error");
       }
     }
 
@@ -144,13 +146,14 @@
         btn.disabled = true;
         btn.textContent = "Collecting...";
 
-        const res = await fetch(`${API_BASE}/collect/${id}`, {
-          method: "PUT",
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json' 
-          }
-        });
+        const res = await fetch(`${API_BASE}/api/donations/collect/${id}`, {
+  method: "PUT",
+  headers: { 
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json' 
+  }
+});
+
 
         if (!res.ok) throw new Error("Failed to mark collected");
 
@@ -166,13 +169,11 @@
       }
     }
 
-    // Make markCollected globally accessible (called by inline onclick)
     window.markCollected = markCollected;
 
     loadPendingDonations();
   });
 </script>
-
 
     
    

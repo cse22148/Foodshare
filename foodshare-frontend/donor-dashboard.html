@@ -144,7 +144,7 @@
   </div>
 
 <script>
-  const API = "http://localhost:5000/api/donations";
+  const API = "https://foodshare-app.onrender.com";
 
   function handleLogout() {
     alert("Session expired. Please log in again.");
@@ -222,9 +222,10 @@ try {
     async function loadMyDonations() {
       myDonationsList.innerHTML = "<p>Loading donations…</p>";
       try {
-        const res = await fetch(`${API}/my-donations/${encodeURIComponent(donorId)}`, {
+      const res = await fetch(`${API}/api/donations/my-donations/${encodeURIComponent(donorId)}`, {
   headers: { Authorization: `Bearer ${token}` }
 });
+
 
         if (res.status === 401 || res.status === 403) return handleLogout();
 
@@ -281,7 +282,8 @@ const agentButton = d.status === "Collected" ? `
 
       const donation = {
         donorName,
-        foodType: type === "biogas" ? "Organic" : (type === "packed" ? "Packed" : "Fresh"),
+        foodType: type === "biogas" ? "organic" : (type === "packed" ? "packed" : "fresh"),
+
         quantity: type === "biogas"
           ? parseFloat(biogasQuantityInput.value)
           : parseFloat(foodQuantityInput.value),
@@ -289,9 +291,11 @@ const agentButton = d.status === "Collected" ? `
         role: type === "biogas" ? "Biogas" : "NGO",
         peopleServed: type !== "biogas" ? parseInt(peopleCountInput.value) : undefined
       };
-
+         
       try {
-        const res = await fetch(`${API}/donate`, {
+        
+        const res = await fetch(`${API}/api/donations/donate`, {
+
           method: "POST",
           headers: {
             "Content-Type": "application/json",

@@ -73,7 +73,7 @@
 }
 
     /* ---------- CONFIG ---------- */
-    const API   = "http://localhost:5000/api/donations";
+    const API   = "https://foodshare-app.onrender.com";
     const token = localStorage.getItem("biogas_token");
     if (!token) handleLogout();                 // no token → redirect
     
@@ -120,44 +120,44 @@
     
     /* ---------- API calls ---------- */
     async function loadPending() {
-      pickupList.innerHTML = "<p class='text-gray-300'>Loading…</p>";
-      try {
-        const res = await fetch(`${API}/pending/biogas`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.status === 401 || res.status === 403) return handleLogout();
-        const data = await res.json();
-        renderPickups(data);
-      } catch {
-        pickupList.innerHTML = "<p class='text-red-400'>Server error.</p>";
-      }
-    }
-    
-    async function markCollected(id, btn) {
-      if (!confirm("Mark this pickup as collected?")) return;
-      btn.disabled = true;
-      try {
-        const res = await fetch(`${API}/collect/${id}`, {
-          method: "PUT",
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.status === 401 || res.status === 403) return handleLogout();
-        if (!res.ok) throw new Error();
-        const result = await res.json();
-        btn.parentElement.remove();
-        addToHistory(result.donation);
-       
-        showToast("Pickup marked as collected!");
+  pickupList.innerHTML = "<p class='text-gray-300'>Loading…</p>";
+  try {
+    const res = await fetch(`${API}/api/donations/pending/biogas`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.status === 401 || res.status === 403) return handleLogout();
+    const data = await res.json();
+    renderPickups(data);
+  } catch {
+    pickupList.innerHTML = "<p class='text-red-400'>Server error.</p>";
+  }
+}
+async function markCollected(id, btn) {
+  if (!confirm("Mark this pickup as collected?")) return;
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/api/donations/collect/${id}`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` }
+    });
 
+    if (res.status === 401 || res.status === 403) return handleLogout();
+    if (!res.ok) throw new Error();
 
-        if (!pickupList.children.length)
-          pickupList.innerHTML = "<p class='text-gray-300'>No pending pickups.</p>";
-      } catch {
-        alert("Update failed.");
-        btn.disabled = false;
-      }
-    }
-    
+    const result = await res.json();
+    btn.parentElement.remove();
+    addToHistory(result.donation || result); // handle both structures
+
+    showToast("Pickup marked as collected!");
+
+    if (!pickupList.children.length)
+      pickupList.innerHTML = "<p class='text-gray-300'>No pending pickups.</p>";
+  } catch {
+    alert("Update failed.");
+    btn.disabled = false;
+  }
+}
+
     /* ---------- helpers ---------- */
     function handleLogout() {
       alert("Session expired. Please log in again.");
@@ -173,7 +173,7 @@
   if (!token) return;
 
   try {
-    const res = await fetch('http://localhost:5000/api/donations/pending/biogas', {
+    const res = await fetch('https://foodshare-app.onrender.com/api/donations/pending/biogas', {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
