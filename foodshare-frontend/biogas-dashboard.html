@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Biogas Agent Dashboard - FoodShare</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-image: url('biogasbg.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+
+    .glass-card {
+      background-color: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 1rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+<body class="text-white min-h-screen font-sans">
+
+  <!-- Header -->
+  <header class="bg-green-700 bg-opacity-90 p-4 text-white text-2xl font-bold shadow-md">
+    Biogas Agent Dashboard
+  </header>
+
+  <div class="flex">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-gray-900 bg-opacity-80 p-4 min-h-screen">
+      <nav>
+        <ul class="space-y-4 text-lg">
+          <li><a href="#" class="hover:text-green-400">Pending Pickups</a></li>
+          <li><a href="#" class="hover:text-green-400">Pickup History</a></li>
+          <li><a href="login.html" class="hover:text-red-500">Logout</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-6">
+      <h2 class="text-xl font-semibold mb-4">Pending Organic Waste Pickups</h2>
+      
+      <div id="pickup-list" class="space-y-4">
+        <!-- Pickup cards injected by JS -->
+      </div>
+
+      <h2 class="text-xl font-semibold mt-10 mb-4">Pickup History</h2>
+      <ul id="history-list" class="list-disc pl-5 text-gray-300">
+        <!-- Completed pickups -->
+      </ul>
+    </main>
+  </div>
+
+<div id="toast" class="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-2 rounded shadow-md hidden transition duration-300"></div>
+  <script>
+    
+     function showToast(message, type = 'success') {
+  const toast = document.getElementById("toast");
+  toast.textContent = message;
+  toast.className = `fixed bottom-6 right-6 px-4 py-2 rounded shadow-md transition duration-300 ${
+    type === "success" ? "bg-green-600" : "bg-red-500"
+  }`;
+  toast.classList.remove("hidden");
+
+  setTimeout(() => {
+    toast.classList.add("hidden");
+  }, 3000);
+}
+
+    /* ---------- CONFIG ---------- */
+    const API   = "http://localhost:5000/api/donations";
+    const token = localStorage.getItem("biogas_token");
+    if (!token) handleLogout();                 // no token → redirect
+    
+    let agentName = "Biogas Agent";
+    try {
+      const payload  = JSON.parse(atob(token.split(".")[1])); // decode JWT
+      agentName      = payload.name || agentName;             // use if you want to show the name
+    } catch {
+      handleLogout();                 // malformed / expired token → redirect
+    }
+    
+    /* ---------- DOM refs ---------- */
+    const pickupList  = document.getElementById("pickup-list");
+    const historyList = document.getElementById("history-list");
+    
+    /* ---------- Render helpers ---------- */
+    function renderPickups(list) {
+      pickupList.innerHTML = list.length
+        ? ""
+        : '<p class="text-gray-300">No pending pickups.</p>';
+    
+      list.forEach(d => {
+        pickupList.insertAdjacentHTML(
+          "beforeend",
+          `<div class="glass-card p-4 space-y-1">
+             <h3 class="text-lg font-bold">${d.donorName}</h3>
+             <p>Quantity: ${d.quantity} kg</p>
+             <p>Address: ${d.address}</p>
+             <button class="mt-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded"
+                     onclick="markCollected('${d._id}', this)">
+               Mark as Collected
+             </button>
+           </div>`
+        );
+      });
+    }
+    
+    function addToHistory(d) {
+      historyList.insertAdjacentHTML(
+        "afterbegin",
+        `<li>✔️ ${d.donorName} – ${d.quantity} kg</li>`
+      );
+    }
+    
+    /* ---------- API calls ---------- */
+    async function loadPending() {
+      pickupList.innerHTML = "<p class='text-gray-300'>Loading…</p>";
+      try {
+        const res = await fetch(`${API}/pending/biogas`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.status === 401 || res.status === 403) return handleLogout();
+        const data = await res.json();
+        renderPickups(data);
+      } catch {
+        pickupList.innerHTML = "<p class='text-red-400'>Server error.</p>";
+      }
+    }
+    
+    async function markCollected(id, btn) {
+      if (!confirm("Mark this pickup as collected?")) return;
+      btn.disabled = true;
+      try {
+        const res = await fetch(`${API}/collect/${id}`, {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.status === 401 || res.status === 403) return handleLogout();
+        if (!res.ok) throw new Error();
+        const result = await res.json();
+        btn.parentElement.remove();
+        addToHistory(result.donation);
+       
+        showToast("Pickup marked as collected!");
+
+
+        if (!pickupList.children.length)
+          pickupList.innerHTML = "<p class='text-gray-300'>No pending pickups.</p>";
+      } catch {
+        alert("Update failed.");
+        btn.disabled = false;
+      }
+    }
+    
+    /* ---------- helpers ---------- */
+    function handleLogout() {
+      alert("Session expired. Please log in again.");
+      localStorage.removeItem("token");
+      location.href = "login.html";
+    }
+    
+    /* ---------- init ---------- */
+    loadPending();
+
+    async function checkForNewDonations() {
+  const token = localStorage.getItem('biogas_token');
+  if (!token) return;
+
+  try {
+    const res = await fetch('http://localhost:5000/api/donations/pending/biogas', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (res.ok) {
+      const donations = await res.json();
+      if (donations.length > 0) {
+        showToast(`You have ${donations.length} pending pickups!`);
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching pending donations:', err);
+  }
+}
+
+checkForNewDonations();
+setInterval(checkForNewDonations, 5000);
+
+    </script>
+    
+   
+ 
+
+</body>
+</html>

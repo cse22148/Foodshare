@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Donor Dashboard | FoodShare</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-image: url('donorbg.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+
+    .form-glass {
+      background-color: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 1rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+.donation-card {
+  background-color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease-in-out;
+}
+.donation-card:hover {
+  transform: scale(1.05);
+}
+
+/* Food type colors */
+.food-packed {
+  border-left: 4px solid #facc15; /* yellow-400 */
+}
+.food-fresh {
+  border-left: 4px solid #4ade80; /* green-400 */
+}
+.food-organic {
+  border-left: 4px solid #a855f7; /* purple-400 */
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.modal-content {
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 28rem;
+}
+.modal.show {
+  display: flex;
+}
+
+  </style>
+</head>
+<!-- ... your existing head and styles ... -->
+
+<body class="bg-gray-100">
+  <div class="flex min-h-screen">
+
+    <!-- Sidebar -->
+    <div class="bg-green-700 text-white w-64 p-4">
+      <h2 class="text-2xl font-semibold">FoodShare</h2>
+      <nav class="mt-6">
+        <ul>
+          <li><a href="#" class="block py-2 px-4 hover:bg-green-600">Dashboard</a></li>
+          <li><a href="#" class="block py-2 px-4 hover:bg-green-600">My Donations</a></li>
+          <li><a href="#" class="block py-2 px-4 hover:bg-green-600">Add New Donation</a></li>
+          <li><a href="#" class="block py-2 px-4 hover:bg-green-600">Profile</a></li>
+          <li><button id="logoutBtn" class="w-full text-left py-2 px-4 hover:bg-green-600">Logout</button></li>
+        </ul>
+      </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 p-6">
+      <header class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold">Welcome, Donor</h1>
+        <button id="logoutBtnTop" class="bg-red-500 text-white px-4 py-2 rounded">Logout</button>
+      </header>
+
+      <!-- Donation Status -->
+      <section>
+        <h2 class="text-2xl mb-4">Your Donations</h2>
+        <div id="myDonationsList" class="bg-white shadow-md rounded-lg p-4 max-h-80 overflow-y-auto">
+          <p>Loading donations...</p>
+        </div>
+      </section>
+
+      <!-- Add New Donation -->
+      <section class="mt-8">
+        <h2 class="text-2xl mb-4">Add New Donation</h2>
+        <form action="#" method="POST" class="form-glass p-6" id="donationForm">
+
+          <!-- Food Type Dropdown -->
+          <label class="block mb-2" for="food-type">Food Type</label>
+          <select id="food-type" class="w-full p-3 border rounded mb-4" required>
+            <option value="">-- Select Food Type --</option>
+            <option value="packed">Packed Food</option>
+            <option value="fresh">Fresh Food</option>
+            <option value="biogas">Organic Waste (Biogas)</option>
+          </select>
+
+          <!-- Quantity for Packed/Fresh Food -->
+          <div id="people-count-field" class="hidden">
+            <label class="block mb-2" for="people-count">How many people can eat from this?</label>
+            <input type="number" id="people-count" class="w-full p-3 border rounded mb-4" placeholder="Number of people">
+          </div>
+
+          <div id="food-qty-field" class="hidden">
+            <label class="block mb-2" for="food-quantity">Quantity (in kg)</label>
+            <input type="number" id="food-quantity" class="w-full p-3 border rounded mb-4" placeholder="Quantity in kg">
+          </div>
+
+          <!-- Quantity for Biogas -->
+          <div id="biogas-qty-field" class="hidden">
+            <label class="block mb-2" for="biogas-quantity">Quantity (in kg)</label>
+            <input type="number" id="biogas-quantity" class="w-full p-3 border rounded mb-4" placeholder="Quantity in kg">
+          </div>
+
+          <!-- Optional: Add address field here -->
+          <!-- <label class="block mb-2" for="address">Pickup Address</label>
+          <input type="text" id="address" class="w-full p-3 border rounded mb-4" placeholder="Enter address" required /> -->
+
+          <button type="submit" class="bg-green-700 text-white px-6 py-3 rounded">Submit Donation</button>
+        </form>
+      </section>
+    </div>
+  </div>
+
+<script>
+  const API = "http://localhost:5000/api/donations";
+
+  function handleLogout() {
+    alert("Session expired. Please log in again.");
+    localStorage.removeItem("token");
+    location.href = "login.html";
+  }
+
+  function showModal(name, phone, eta) {
+    document.getElementById("agentName").innerHTML = `<strong>Name:</strong> ${name || "Unknown"}`;
+    document.getElementById("agentPhone").innerHTML = `<strong>Phone:</strong> ${phone || "N/A"}`;
+    document.getElementById("agentETA").innerHTML = `<strong>Estimated Arrival:</strong> ${eta ? new Date(eta).toLocaleTimeString() : "N/A"}`;
+    const modal = document.getElementById("agentModal");
+    modal.classList.remove("hidden");
+    modal.classList.add("show");
+  }
+
+  function closeModal() {
+    const modal = document.getElementById("agentModal");
+    modal.classList.remove("show");
+    modal.classList.add("hidden");
+  }
+
+  async function main() {
+    const token = localStorage.getItem("donor_token");
+    if (!token) return handleLogout();
+let donorName = "Anonymous Donor";
+let donorId = "";
+
+try {
+  const base64Url = token.split('.')[1];
+  const payload = JSON.parse(decodeURIComponent(atob(base64Url).split('').map(function(c) {
+    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+  }).join('')));
+
+  if (payload.role?.toLowerCase() !== "donor") return handleLogout();
+
+  donorName = payload.name || "Anonymous Donor";
+  donorId = payload.email || payload._id || payload.id;
+
+  if (!donorId) return handleLogout();  // If still missing, force logout
+} catch (err) {
+  console.error("JWT decode error", err);
+  return handleLogout();
+}
+
+
+
+    // DOM elements
+    const logoutBtn = document.getElementById("logoutBtn");
+    const logoutBtnTop = document.getElementById("logoutBtnTop");
+    const foodTypeSelect = document.getElementById("food-type");
+    const peopleCountField = document.getElementById("people-count-field");
+    const foodQtyField = document.getElementById("food-qty-field");
+    const biogasQtyField = document.getElementById("biogas-qty-field");
+    const peopleCountInput = document.getElementById("people-count");
+    const foodQuantityInput = document.getElementById("food-quantity");
+    const biogasQuantityInput = document.getElementById("biogas-quantity");
+    const donationForm = document.getElementById("donationForm");
+    const myDonationsList = document.getElementById("myDonationsList");
+
+    logoutBtn.addEventListener("click", handleLogout);
+    logoutBtnTop.addEventListener("click", handleLogout);
+
+    foodTypeSelect.addEventListener("change", () => {
+      const type = foodTypeSelect.value;
+      peopleCountField.classList.toggle("hidden", !(type === "packed" || type === "fresh"));
+      foodQtyField.classList.toggle("hidden", !(type === "packed" || type === "fresh"));
+      biogasQtyField.classList.toggle("hidden", type !== "biogas");
+
+      peopleCountInput.required = type === "packed" || type === "fresh";
+      foodQuantityInput.required = type === "packed" || type === "fresh";
+      biogasQuantityInput.required = type === "biogas";
+    });
+
+    async function loadMyDonations() {
+      myDonationsList.innerHTML = "<p>Loading donations…</p>";
+      try {
+        const res = await fetch(`${API}/my-donations/${encodeURIComponent(donorId)}`, {
+  headers: { Authorization: `Bearer ${token}` }
+});
+
+        if (res.status === 401 || res.status === 403) return handleLogout();
+
+        const donations = await res.json();
+        console.log("Donations:", donations);
+
+        if (!donations.length) {
+          myDonationsList.innerHTML = "<p>No donations yet.</p>";
+          return;
+        }
+
+        myDonationsList.innerHTML = donations.map(d => {
+          const foodClass = d.foodType === "Packed" ? "food-packed" :
+                            d.foodType === "Fresh" ? "food-fresh" : "food-organic";
+
+          const agentName = d.agentName || "Not Assigned";
+const agentPhone = d.agentPhone || "N/A";
+const eta = d.estimatedArrival || null;
+
+const agentButton = d.status === "Collected" ? `
+  <button onclick='showModal(${JSON.stringify(agentName)}, ${JSON.stringify(agentPhone)}, ${JSON.stringify(eta)})'
+    class="mt-2 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">
+    View Agent Info
+  </button>
+` : "";
+
+
+          return `
+  <div class="donation-card ${foodClass}">
+    <p><strong>Food:</strong> ${d.foodType}</p>
+    <p><strong>Qty:</strong> ${d.quantity} kg</p>
+    <p><strong>Status:</strong> ${d.status}</p>
+    ${d.status === "Collected" && d.agentName ? `
+  <p class="mt-2 text-green-700 font-semibold">
+    ✅ Your food will be collected by ${d.agentName} (Phone: ${d.agentPhone || "N/A"}) at ${d.estimatedArrival ? new Date(d.estimatedArrival).toLocaleTimeString() : "N/A"}
+  </p>
+` : ""}
+
+    ${agentButton}
+  </div>
+`;
+
+        }).join("");
+      } catch (err) {
+  console.error("Error loading donations:", err);
+  myDonationsList.innerHTML = "<p class='text-gray-500'>Could not load donations at the moment.</p>";
+}
+
+    }
+
+    donationForm.addEventListener("submit", async e => {
+      e.preventDefault();
+      const type = foodTypeSelect.value;
+
+      const donation = {
+        donorName,
+        foodType: type === "biogas" ? "Organic" : (type === "packed" ? "Packed" : "Fresh"),
+        quantity: type === "biogas"
+          ? parseFloat(biogasQuantityInput.value)
+          : parseFloat(foodQuantityInput.value),
+        address: "College Hostel",
+        role: type === "biogas" ? "Biogas" : "NGO",
+        peopleServed: type !== "biogas" ? parseInt(peopleCountInput.value) : undefined
+      };
+
+      try {
+        const res = await fetch(`${API}/donate`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify(donation)
+        });
+        if (res.status === 401 || res.status === 403) return handleLogout();
+        if (!res.ok) throw new Error();
+
+        alert("✅ Donation submitted!");
+        donationForm.reset();
+        [peopleCountField, foodQtyField, biogasQtyField].forEach(el => el.classList.add("hidden"));
+        loadMyDonations();
+      } catch {
+        alert("Submission failed.");
+      }
+    });
+
+    // Initial call
+    loadMyDonations();
+  }
+
+  main();
+</script>
+
+
+  <!-- Agent Info Modal -->
+<div id="agentModal" class="modal hidden">
+  <div class="modal-content">
+    <h2 class="text-xl font-bold mb-2">Agent Details</h2>
+    <p id="agentName" class="mb-1"><strong>Name:</strong> </p>
+    <p id="agentPhone" class="mb-1"><strong>Phone:</strong> </p>
+    <p id="agentETA" class="mb-4"><strong>Estimated Arrival:</strong> </p>
+    <button onclick="closeModal()" class="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Close</button>
+  </div>
+</div>
+
+</body>
+</html>

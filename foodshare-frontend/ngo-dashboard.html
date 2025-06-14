@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NGO Agent Dashboard | FoodShare</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-image: url('ngo-bg.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+
+    .glass {
+      background-color: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 1rem;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="flex min-h-screen">
+
+    <!-- Sidebar -->
+    <div class="glass text-white w-64 p-4 bg-green-800 bg-opacity-90">
+      <h2 class="text-2xl font-semibold mb-4">FoodShare</h2>
+      <nav>
+        <ul>
+          <li><a href="#" class="block py-2 px-4 rounded hover:bg-green-700">Dashboard</a></li>
+          <li><a href="#" class="block py-2 px-4 rounded hover:bg-green-700">Pending Donations</a></li>
+          <li><a href="#" class="block py-2 px-4 rounded hover:bg-green-700">Donated Food List</a></li>
+          <li><a href="#" class="block py-2 px-4 rounded hover:bg-green-700">Profile</a></li>
+          <li><button id="logout-btn" class="w-full text-left py-2 px-4 rounded hover:bg-green-700">Logout</button></li>
+        </ul>
+      </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 p-6">
+      <div class="glass p-6">
+        <header class="flex justify-between items-center mb-6">
+          <h1 class="text-3xl font-bold text-gray-800">Welcome, NGO Agent</h1>
+          <button id="logout-btn-top" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Logout</button>
+        </header>
+
+        <!-- Pending Donations -->
+        <section id="pending-section">
+          <h2 class="text-2xl mb-4 text-gray-700">Pending Donations</h2>
+          <div id="pending-box" class="bg-white bg-opacity-80 shadow-md rounded-lg p-4">
+            <p class="text-gray-800">No pending donations.</p>
+          </div>
+        </section>
+
+        <!-- Donated Food List -->
+        <section id="donated-section" class="mt-8">
+          <h2 class="text-2xl mb-4 text-gray-700">Donated Food List</h2>
+          <div id="donated-box" class="bg-white bg-opacity-80 shadow-md rounded-lg p-4">
+            <p class="text-gray-800">No donated food yet.</p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+<div id="toast" class="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-2 rounded shadow-md hidden transition duration-300"></div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.className = `fixed bottom-6 right-6 px-4 py-2 rounded shadow-md transition duration-300 ${
+        type === "success" ? "bg-green-600" : "bg-red-500"
+      }`;
+      toast.classList.remove("hidden");
+      setTimeout(() => toast.classList.add("hidden"), 3000);
+    }
+
+    const API_BASE = "http://localhost:5000/api/donations";
+    const token = localStorage.getItem("ngo_token");
+
+    if (!token) return;
+
+    try {
+      JSON.parse(atob(token.split(".")[1]));
+    } catch {
+      return;
+    }
+
+    const pendingBox = document.getElementById("pending-box");
+    const donatedBox = document.getElementById("donated-box");
+
+    function renderPending(list) {
+      pendingBox.innerHTML = list.length
+        ? ""
+        : '<p class="text-gray-800">No pending donations.</p>';
+
+      list.forEach(d => {
+        pendingBox.insertAdjacentHTML(
+          "beforeend",
+          `<div class="glass p-4 mb-4">
+             <h3 class="text-lg font-bold">${d.donorName}</h3>
+             <p>Food: ${d.foodType}</p>
+             <p>Qty: ${d.quantity}</p>
+             <p>Address: ${d.address}</p>
+             <button
+               class="mt-2 px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-white"
+               onclick="markCollected('${d._id}', this)">
+               Mark as Collected
+             </button>
+           </div>`
+        );
+      });
+    }
+
+    function addToHistory(d) {
+      donatedBox.insertAdjacentHTML(
+        "afterbegin",
+        `<p class="text-gray-800">✔️ ${d.donorName} — ${d.foodType} (${d.quantity})</p>`
+      );
+    }
+
+    async function loadPendingDonations() {
+      try {
+        const res = await fetch(`${API_BASE}/pending/ngo`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch pending donations");
+
+        const data = await res.json();
+        renderPending(data);
+      } catch (err) {
+        console.error("Error loading pending donations:", err);
+        showToast("Could not load pending donations", "error");
+      }
+    }
+
+    async function markCollected(id, btn) {
+      try {
+        btn.disabled = true;
+        btn.textContent = "Collecting...";
+
+        const res = await fetch(`${API_BASE}/collect/${id}`, {
+          method: "PUT",
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json' 
+          }
+        });
+
+        if (!res.ok) throw new Error("Failed to mark collected");
+
+        const data = await res.json();
+        showToast("Donation marked as collected!");
+        btn.parentElement.remove();
+        addToHistory(data.donation || data);
+      } catch (err) {
+        console.error("Error marking as collected:", err);
+        showToast("Failed to mark as collected", "error");
+        btn.disabled = false;
+        btn.textContent = "Mark as Collected";
+      }
+    }
+
+    // Make markCollected globally accessible (called by inline onclick)
+    window.markCollected = markCollected;
+
+    loadPendingDonations();
+  });
+</script>
+
+
+    
+   
+</body>
+</html>
