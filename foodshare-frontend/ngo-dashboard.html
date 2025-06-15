@@ -25,7 +25,7 @@
 <body>
   <div class="flex min-h-screen">
 
-    <!-- Sidebar -->
+   
     <div class="glass text-white w-64 p-4 bg-green-800 bg-opacity-90">
       <h2 class="text-2xl font-semibold mb-4">FoodShare</h2>
       <nav>
@@ -39,7 +39,7 @@
       </nav>
     </div>
 
-    <!-- Main Content -->
+   
     <div class="flex-1 p-6">
       <div class="glass p-6">
         <header class="flex justify-between items-center mb-6">
@@ -47,7 +47,7 @@
           <button id="logout-btn-top" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Logout</button>
         </header>
 
-        <!-- Pending Donations -->
+        
         <section id="pending-section">
           <h2 class="text-2xl mb-4 text-gray-700">Pending Donations</h2>
           <div id="pending-box" class="bg-white bg-opacity-80 shadow-md rounded-lg p-4">
@@ -135,7 +135,7 @@
 
         const data = await res.json();
         console.log("✅ Pending NGO Donations:", data);
-        renderPending(data);  // 🔧 This line was missing
+        renderPending(data);  
       } catch (err) {
         console.error("Error loading pending donations:", err);
       }

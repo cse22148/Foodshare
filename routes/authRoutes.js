@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "yourSecretKey";
 
-// Hardcoded users for each role (now includes phone)
+
 const hardcodedUsers = [
   {
     name: "Donor User",
@@ -18,18 +18,18 @@ const hardcodedUsers = [
     email: "ngo@example.com",
     password: "ngo123",
     role: "ngo",
-    phone: "9876543210" // <- add real or dummy contact
+    phone: "9876543210"
   },
   {
     name: "Biogas Agent",
     email: "biogas@example.com",
     password: "biogas123",
     role: "biogas",
-    phone: "8765432109" // <- add real or dummy contact
+    phone: "8765432109" 
   }
 ];
 
-// POST /api/login - login with hardcoded users
+
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;

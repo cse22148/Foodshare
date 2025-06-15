@@ -14,8 +14,8 @@ module.exports = function (req, res, next) {
     const decoded = jwt.verify(token, JWT_SECRET);
 
     req.user = {
-      userId: decoded.id,      // changed from userId to id
-      email: decoded.email,    // ensure email is in JWT payload when signing token
+      userId: decoded.id,      
+      email: decoded.email,    
       role: decoded.role,
       name: decoded.name || "User",
     };

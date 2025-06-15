@@ -24,13 +24,13 @@
 </head>
 <body class="text-white min-h-screen font-sans">
 
-  <!-- Header -->
+ 
   <header class="bg-green-700 bg-opacity-90 p-4 text-white text-2xl font-bold shadow-md">
     Biogas Agent Dashboard
   </header>
 
   <div class="flex">
-    <!-- Sidebar -->
+   
     <aside class="w-64 bg-gray-900 bg-opacity-80 p-4 min-h-screen">
       <nav>
         <ul class="space-y-4 text-lg">
@@ -41,17 +41,17 @@
       </nav>
     </aside>
 
-    <!-- Main Content -->
+    
     <main class="flex-1 p-6">
       <h2 class="text-xl font-semibold mb-4">Pending Organic Waste Pickups</h2>
       
       <div id="pickup-list" class="space-y-4">
-        <!-- Pickup cards injected by JS -->
+        
       </div>
 
       <h2 class="text-xl font-semibold mt-10 mb-4">Pickup History</h2>
       <ul id="history-list" class="list-disc pl-5 text-gray-300">
-        <!-- Completed pickups -->
+       
       </ul>
     </main>
   </div>
@@ -72,24 +72,24 @@
   }, 3000);
 }
 
-    /* ---------- CONFIG ---------- */
+   
     const API   = "https://foodshare-app.onrender.com";
     const token = localStorage.getItem("biogas_token");
-    if (!token) handleLogout();                 // no token → redirect
+    if (!token) handleLogout();                 
     
     let agentName = "Biogas Agent";
     try {
-      const payload  = JSON.parse(atob(token.split(".")[1])); // decode JWT
-      agentName      = payload.name || agentName;             // use if you want to show the name
+      const payload  = JSON.parse(atob(token.split(".")[1])); 
+      agentName      = payload.name || agentName;            
     } catch {
-      handleLogout();                 // malformed / expired token → redirect
+      handleLogout();                 
     }
     
-    /* ---------- DOM refs ---------- */
+   
     const pickupList  = document.getElementById("pickup-list");
     const historyList = document.getElementById("history-list");
     
-    /* ---------- Render helpers ---------- */
+    
     function renderPickups(list) {
       pickupList.innerHTML = list.length
         ? ""
@@ -118,7 +118,7 @@
       );
     }
     
-    /* ---------- API calls ---------- */
+  
     async function loadPending() {
   pickupList.innerHTML = "<p class='text-gray-300'>Loading…</p>";
   try {
@@ -158,14 +158,14 @@ async function markCollected(id, btn) {
   }
 }
 
-    /* ---------- helpers ---------- */
+   
     function handleLogout() {
       alert("Session expired. Please log in again.");
       localStorage.removeItem("token");
       location.href = "login.html";
     }
     
-    /* ---------- init ---------- */
+   
     loadPending();
 
     async function checkForNewDonations() {

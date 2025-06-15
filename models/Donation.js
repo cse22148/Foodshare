@@ -7,7 +7,7 @@ const donationSchema = new mongoose.Schema({
   },
   donorEmail: {
     type: String,
-    required: true, // ✅ Email added for identity matching
+    required: true, 
   },
   foodType: {
     type: String,

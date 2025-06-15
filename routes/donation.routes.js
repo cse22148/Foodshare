@@ -1,4 +1,4 @@
-// routes/donation.route.js
+
 const express = require("express");
 const router  = express.Router();
 const Donation = require("../models/Donation");
@@ -7,9 +7,6 @@ const verifyToken = require("../middleware/auth");
 const validRoles      = ["donor", "ngo", "biogas"];
 const validFoodTypes  = ["packed", "fresh", "organic"];
 
-/* ------------------------------------------------------------------
- * 1.  Submit a donation
- * ------------------------------------------------------------------ */
 router.post("/donate", verifyToken, async (req, res) => {
   const { foodType, quantity, address } = req.body;
   const donorName  = req.user.name  || "Anonymous Donor";
@@ -29,7 +26,7 @@ router.post("/donate", verifyToken, async (req, res) => {
   try {
     const donation = new Donation({
       donorName,
-      donorEmail,                // ✅ now stored for secure look‑up
+      donorEmail,                
       foodType: normalizedFoodType,
       quantity,
       address,
@@ -45,9 +42,7 @@ router.post("/donate", verifyToken, async (req, res) => {
   }
 });
 
-/* ------------------------------------------------------------------
- * 2.  Get PENDING donations filtered by role (NGO / BIOGAS dashboard)
- * ------------------------------------------------------------------ */
+
 router.get("/pending/:role", verifyToken, async (req, res) => {
   try {
     const roleParam = req.params.role.toLowerCase();
@@ -71,9 +66,6 @@ router.get("/pending/:role", verifyToken, async (req, res) => {
 });
 
 
-/* ------------------------------------------------------------------
- * 3.  Mark donation COLLECTED  (NGO / BIOGAS action button)
- * ------------------------------------------------------------------ */
 router.put("/collect/:id", verifyToken, async (req, res) => {
   try {
     const donation = await Donation.findById(req.params.id);
@@ -106,9 +98,6 @@ router.put("/collect/:id", verifyToken, async (req, res) => {
   }
 });
 
-/* ------------------------------------------------------------------
- * 4.  Dashboard statistics  (shared global stats endpoint)
- * ------------------------------------------------------------------ */
 router.get("/stats", verifyToken, async (req, res) => {
   try {
     const [pendingNGO, pendingBio, total, collected] = await Promise.all([
@@ -130,9 +119,6 @@ router.get("/stats", verifyToken, async (req, res) => {
   }
 });
 
-/* ------------------------------------------------------------------
- * 5.  Real‑time “pending” notifications for NGO / BIOGAS sidebars
- * ------------------------------------------------------------------ */
 router.get("/notifications/pending", verifyToken, async (req, res) => {
   try {
     const userRole = req.user.role;
@@ -155,9 +141,6 @@ router.get("/notifications/pending", verifyToken, async (req, res) => {
   }
 });
 
-/* ------------------------------------------------------------------
- * 6.  Donor’s own donations (email‑based, secure)
- * ------------------------------------------------------------------ */
 router.get("/my-donations/:donorId", verifyToken, async (req, res) => {
   try {
     if (req.user.role !== "donor")
