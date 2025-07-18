@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Login | FoodShare</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
   <style>
     @keyframes softFade {
       0%, 100% { opacity: 1; }
@@ -123,6 +125,24 @@
 
         <button type="submit">Login</button>
       </form>
+      
+  
+<div id="g_id_onload"
+     data-client_id="1025188202778-0rscntbvu3t1g5m2bel69054o84o1a7a.apps.googleusercontent.com"
+     data-callback="handleGoogleLogin"
+     data-auto_prompt="false"
+     data-ux_mode="popup">
+</div>
+
+
+<div class="g_id_signin"
+     data-type="standard"
+     data-size="large"
+     data-theme="outline"
+     data-text="sign_in_with"
+     data-shape="rectangular"
+     data-logo_alignment="left">
+</div>
 
       <p class="text-center mt-4 text-sm text-gray-600">
         Don't have an account? <a href="#" class="text-green-700 font-semibold hover:underline">Register here</a>
@@ -211,6 +231,45 @@
         submitBtn.textContent = 'Login';
       }
     });
+
+    
+  async function handleGoogleLogin(response) {
+  try {
+    const res = await fetch('https://foodshare-app.onrender.com/api/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential: response.credential })
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.token) {
+      const payload = parseJwt(data.token);
+      const role = payload.role;
+
+      
+      if (role === 'donor') {
+        localStorage.setItem('donor_token', data.token);
+        window.location.href = 'donor-dashboard.html';
+      } else if (role === 'ngo') {
+        localStorage.setItem('ngo_token', data.token);
+        window.location.href = 'ngo-dashboard.html';
+      } else if (role === 'biogas') {
+        localStorage.setItem('biogas_token', data.token);
+        window.location.href = 'biogas-dashboard.html';
+      } else {
+        alert('Unknown role: ' + role);
+      }
+    } else {
+      alert("Google login failed: " + data.message);
+    }
+  } catch (err) {
+    alert("Google login error: " + err.message);
+  }
+}
+
+
+
   </script>
 
 </body>
