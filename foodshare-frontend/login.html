@@ -50,7 +50,7 @@
       margin-bottom: 0.25rem;
       display: block;
     }
-    .login-card input, .login-card select {
+    .login-card input {
       width: 100%;
       padding: 0.7rem;
       margin-bottom: 1rem;
@@ -83,19 +83,19 @@
 </head>
 <body>
 
-  <div class="absolute top-6 w-full text-center z-20 px-4">
+  <div class="absolute top-6 w-full text-center z-20 px-4 mb-12">
     <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
       RefedConnect – <span class="text-green-300 fade-soft">Sharing food, connecting hearts</span>
     </h1>
-    <p class="text-white mt-1 text-sm italic animate-fade-in-down-delay">
-      by  Chanchal, Jay
+    <p class="text-white mt-2 text-sm italic animate-fade-in-down-delay">
+      by Chanchal and Jay
     </p>
   </div>
 
   <div class="overlay"></div>
 
- <div class="flex items-center justify-center w-full min-h-screen relative z-10 px-4">
-  <div class="login-card mx-auto">
+  <div class="flex items-center justify-center w-full min-h-screen relative z-10 px-4 pt-12">
+    <div class="login-card mx-auto">
 
       <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Login to FoodShare</h2>
 
@@ -110,42 +110,29 @@
           <input type="password" id="password" placeholder="********" required minlength="6" autocomplete="current-password" />
         </div>
 
-        <div>
-          <label for="role">Login as</label>
-          <select id="role" required>
-            <option value="">-- Select Role --</option>
-            <option value="donor">Donor</option>
-     <option value="ngo">NGO Agent</option>
-     <option value="biogas">Biogas Agent</option>
-
-          </select>
-        </div>
-
         <p id="loginError" class="login-error"></p>
 
         <button type="submit">Login</button>
       </form>
-      
-  
-<div id="g_id_onload"
-     data-client_id="1025188202778-0rscntbvu3t1g5m2bel69054o84o1a7a.apps.googleusercontent.com"
-     data-callback="handleGoogleLogin"
-     data-auto_prompt="false"
-     data-ux_mode="popup">
-</div>
 
+      <div id="g_id_onload"
+           data-client_id="1025188202778-0rscntbvu3t1g5m2bel69054o84o1a7a.apps.googleusercontent.com"
+           data-callback="handleGoogleLogin"
+           data-auto_prompt="false"
+           data-ux_mode="popup">
+      </div>
 
-<div class="g_id_signin"
-     data-type="standard"
-     data-size="large"
-     data-theme="outline"
-     data-text="sign_in_with"
-     data-shape="rectangular"
-     data-logo_alignment="left">
-</div>
+      <div class="g_id_signin"
+           data-type="standard"
+           data-size="large"
+           data-theme="outline"
+           data-text="sign_in_with"
+           data-shape="rectangular"
+           data-logo_alignment="left">
+      </div>
 
       <p class="text-center mt-4 text-sm text-gray-600">
-        Don't have an account? <a href="#" class="text-green-700 font-semibold hover:underline">Register here</a>
+        New here? <a href="#" class="text-green-700 font-semibold hover:underline">Sign in using Google and select your role</a>
       </p>
     </div>
   </div>
@@ -173,9 +160,8 @@
 
       const email = loginForm.email.value.trim();
       const password = loginForm.password.value;
-      const selectedRole = loginForm.role.value;
 
-      if (!email || !password || !selectedRole) {
+      if (!email || !password) {
         loginError.textContent = 'Please fill in all fields.';
         submitBtn.disabled = false;
         submitBtn.textContent = 'Login';
@@ -183,12 +169,11 @@
       }
 
       try {
-       const res = await fetch('https://foodshare-app.onrender.com/api/auth/login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email, password })
-});
-
+        const res = await fetch('https://foodshare-app.onrender.com/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
 
         const data = await res.json();
 
@@ -201,29 +186,24 @@
             return;
           }
 
-          const userRole = userPayload.role;
-          if (userRole !== selectedRole) {
-            loginError.textContent = `Your account is registered as "${userRole}". Please select the correct role.`;
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Login';
-            return;
+          const role = userPayload.role;
+          if (role === 'donor') {
+            localStorage.setItem('donor_token', data.token);
+            window.location.href = 'donor-dashboard.html';
+          } else if (role === 'ngo') {
+            localStorage.setItem('ngo_token', data.token);
+            window.location.href = 'ngo-dashboard.html';
+          } else if (role === 'biogas') {
+            localStorage.setItem('biogas_token', data.token);
+            window.location.href = 'biogas-dashboard.html';
+          } else {
+            loginError.textContent = 'Unrecognized role.';
           }
-
-      if (userRole === 'donor') {
-  localStorage.setItem('donor_token', data.token);
-  window.location.href = 'donor-dashboard.html';
-} else if (userRole === 'ngo') {
-  localStorage.setItem('ngo_token', data.token);
-  window.location.href = 'ngo-dashboard.html';
-} else if (userRole === 'biogas') {
-  localStorage.setItem('biogas_token', data.token);
-  window.location.href = 'biogas-dashboard.html';
-}
-
 
         } else {
           loginError.textContent = data.message || 'Login failed. Please check credentials.';
         }
+
       } catch (err) {
         loginError.textContent = 'Server error. Try again later.';
       } finally {
@@ -232,45 +212,39 @@
       }
     });
 
-    
-  async function handleGoogleLogin(response) {
-  try {
-    const res = await fetch('https://foodshare-app.onrender.com/api/auth/google', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ credential: response.credential })
-    });
+    async function handleGoogleLogin(response) {
+      try {
+        const res = await fetch('https://foodshare-app.onrender.com/api/auth/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credential: response.credential })
+        });
 
-    const data = await res.json();
+        const data = await res.json();
 
-    if (res.ok && data.token) {
-      const payload = parseJwt(data.token);
-      const role = payload.role;
+        if (res.ok && data.token) {
+          const payload = parseJwt(data.token);
+          const role = payload.role;
 
-      
-      if (role === 'donor') {
-        localStorage.setItem('donor_token', data.token);
-        window.location.href = 'donor-dashboard.html';
-      } else if (role === 'ngo') {
-        localStorage.setItem('ngo_token', data.token);
-        window.location.href = 'ngo-dashboard.html';
-      } else if (role === 'biogas') {
-        localStorage.setItem('biogas_token', data.token);
-        window.location.href = 'biogas-dashboard.html';
-      } else {
-        alert('Unknown role: ' + role);
+          if (role === 'donor') {
+            localStorage.setItem('donor_token', data.token);
+            window.location.href = 'donor-dashboard.html';
+          } else if (role === 'ngo') {
+            localStorage.setItem('ngo_token', data.token);
+            window.location.href = 'ngo-dashboard.html';
+          } else if (role === 'biogas') {
+            localStorage.setItem('biogas_token', data.token);
+            window.location.href = 'biogas-dashboard.html';
+          } else {
+            alert('Unknown role: ' + role);
+          }
+        } else {
+          alert("Google login failed: " + data.message);
+        }
+      } catch (err) {
+        alert("Google login error: " + err.message);
       }
-    } else {
-      alert("Google login failed: " + data.message);
     }
-  } catch (err) {
-    alert("Google login error: " + err.message);
-  }
-}
-
-
-
   </script>
-
 </body>
 </html>
