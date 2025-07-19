@@ -213,38 +213,43 @@
     });
 
     async function handleGoogleLogin(response) {
-      try {
-        const res = await fetch('https://foodshare-app.onrender.com/api/auth/google', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ credential: response.credential })
-        });
+  try {
+    const res = await fetch('https://foodshare-app.onrender.com/api/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential: response.credential })
+    });
 
-        const data = await res.json();
+    const data = await res.json();
 
-        if (res.ok && data.token) {
-          const payload = parseJwt(data.token);
-          const role = payload.role;
+    if (res.ok && data.token) {
+      const payload = parseJwt(data.token);
+      const role = payload.role;
 
-          if (role === 'donor') {
-            localStorage.setItem('donor_token', data.token);
-            window.location.href = 'donor-dashboard.html';
-          } else if (role === 'ngo') {
-            localStorage.setItem('ngo_token', data.token);
-            window.location.href = 'ngo-dashboard.html';
-          } else if (role === 'biogas') {
-            localStorage.setItem('biogas_token', data.token);
-            window.location.href = 'biogas-dashboard.html';
-          } else {
-            alert('Unknown role: ' + role);
-          }
-        } else {
-          alert("Google login failed: " + data.message);
-        }
-      } catch (err) {
-        alert("Google login error: " + err.message);
+      // Save token temporarily (we'll reuse this in select-role.html)
+      localStorage.setItem("google_token", data.token);
+
+      if (role === 'donor') {
+        localStorage.setItem('donor_token', data.token);
+        window.location.href = 'donor-dashboard.html';
+      } else if (role === 'ngo') {
+        localStorage.setItem('ngo_token', data.token);
+        window.location.href = 'ngo-dashboard.html';
+      } else if (role === 'biogas') {
+        localStorage.setItem('biogas_token', data.token);
+        window.location.href = 'biogas-dashboard.html';
+      } else {
+        // No role yet → Go to role selection
+        window.location.href = 'select-role.html';
       }
+    } else {
+      alert("Google login failed: " + data.message);
     }
+  } catch (err) {
+    alert("Google login error: " + err.message);
+  }
+}
+
   </script>
 </body>
 </html>

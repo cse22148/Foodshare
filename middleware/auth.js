@@ -2,14 +2,15 @@ const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET || "yourSecretKey";
 
 function verifyToken(req, res, next) {
-  const token = req.headers["authorization"];
-  if (!token) return res.status(401).json({ message: "Access denied" });
+  const authHeader = req.headers["authorization"];
+  if (!authHeader) return res.status(401).json({ message: "Access denied, token missing" });
 
   try {
-    const decoded = jwt.verify(token.split(" ")[1], JWT_SECRET);
+    const token = authHeader.split(" ")[1]; // Bearer <token>
+    const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
     next();
-  } catch {
+  } catch (err) {
     res.status(403).json({ message: "Invalid token" });
   }
 }
