@@ -136,126 +136,124 @@
       </p>
     </div>
   </div>
-
-  <script>
-    function parseJwt(token) {
-      try {
-        const base64Payload = token.split('.')[1];
-        const payload = atob(base64Payload.replace(/-/g, '+').replace(/_/g, '/'));
-        return JSON.parse(payload);
-      } catch (e) {
-        return null;
-      }
+<script>
+  function parseJwt(token) {
+    try {
+      const base64Payload = token.split('.')[1];
+      const payload = atob(base64Payload.replace(/-/g, '+').replace(/_/g, '/'));
+      return JSON.parse(payload);
+    } catch {
+      return null;
     }
-
-    const loginForm = document.getElementById('loginForm');
-    const loginError = document.getElementById('loginError');
-    const submitBtn = loginForm.querySelector('button[type="submit"]');
-
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      loginError.textContent = '';
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Logging in...';
-
-      const email = loginForm.email.value.trim();
-      const password = loginForm.password.value;
-
-      if (!email || !password) {
-        loginError.textContent = 'Please fill in all fields.';
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Login';
-        return;
-      }
-
-      try {
-        const res = await fetch('https://foodshare-app.onrender.com/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-
-        const data = await res.json();
-
-        if (res.ok && data.token) {
-          const userPayload = parseJwt(data.token);
-          if (!userPayload || !userPayload.role) {
-            loginError.textContent = 'Invalid token received.';
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Login';
-            return;
-          }
-
-          const role = userPayload.role;
-          if (role === 'donor') {
-            localStorage.setItem('donor_token', data.token);
-            window.location.href = 'donor-dashboard.html';
-          } else if (role === 'ngo') {
-            localStorage.setItem('ngo_token', data.token);
-            window.location.href = 'ngo-dashboard.html';
-          } else if (role === 'biogas') {
-            localStorage.setItem('biogas_token', data.token);
-            window.location.href = 'biogas-dashboard.html';
-          } else {
-            loginError.textContent = 'Unrecognized role.';
-          }
-
-        } else {
-          loginError.textContent = data.message || 'Login failed. Please check credentials.';
-        }
-
-      } catch (err) {
-        loginError.textContent = 'Server error. Try again later.';
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Login';
-      }
-    });
-async function handleGoogleLogin(response) {
-  try {
-    const res = await fetch('https://foodshare-app.onrender.com/api/auth/google', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ credential: response.credential })
-    });
-
-    const data = await res.json();
-
-    if (res.ok && data.token) {
-      const payload = parseJwt(data.token);
-      localStorage.setItem("google_token", data.token);  // Save temporarily
-
-      if (!payload || !payload.role) {
-        // No role yet → Go to role selection
-        window.location.href = 'select-role.html';
-        return;
-      }
-
-      const role = payload.role;
-
-      // Redirect to the right dashboard
-      if (role === 'donor') {
-        localStorage.setItem('donor_token', data.token);
-        window.location.href = 'donor-dashboard.html';
-      } else if (role === 'ngo') {
-        localStorage.setItem('ngo_token', data.token);
-        window.location.href = 'ngo-dashboard.html';
-      } else if (role === 'biogas') {
-        localStorage.setItem('biogas_token', data.token);
-        window.location.href = 'biogas-dashboard.html';
-      } else {
-        alert('Unknown role. Please contact support.');
-      }
-
-    } else {
-      alert("Google login failed: " + data.message);
-    }
-  } catch (err) {
-    alert("Google login error: " + err.message);
   }
-}
+
+  // Redirect logic based on role
+  function redirectByRole(role, token) {
+    localStorage.setItem('token', token);
+    localStorage.setItem('role', role || '');
+
+    switch (role) {
+      case 'donor':
+        localStorage.setItem('donor_token', token);
+        window.location.href = '/donor-dashboard.html';
+        break;
+      case 'ngo':
+        localStorage.setItem('ngo_token', token);
+        window.location.href = '/ngo-dashboard.html';
+        break;
+      case 'biogas':
+        localStorage.setItem('biogas_token', token);
+        window.location.href = '/biogas-dashboard.html';
+        break;
+      default:
+        window.location.href = '/selectrole.html';  // ✅ fix this path if needed
+    }
+  }
+
+  // Email login handler
+  const loginForm = document.getElementById('loginForm');
+  const loginError = document.getElementById('loginError');
+  const submitBtn = loginForm?.querySelector('button[type="submit"]');
+
+  loginForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    loginError.textContent = '';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Logging in...';
+
+    const email = loginForm.email.value.trim();
+    const password = loginForm.password.value;
+
+    if (!email || !password) {
+      loginError.textContent = 'Please fill in all fields.';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Login';
+      return;
+    }
+
+    try {
+      const res = await fetch('https://foodshare-app.onrender.com/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.token) {
+        loginError.textContent = data.message || 'Login failed. Please check credentials.';
+        return;
+      }
+
+      const userPayload = parseJwt(data.token);
+      if (!userPayload) {
+        loginError.textContent = 'Invalid token received.';
+        return;
+      }
+
+      redirectByRole(userPayload.role, data.token);
+    } catch (err) {
+      console.error(err);
+      loginError.textContent = 'Server error. Try again later.';
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Login';
+    }
+  });
+
+  // Google login handler
+  async function handleGoogleLogin(response) {
+    try {
+      const res = await fetch('https://foodshare-app.onrender.com/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: response.credential })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.token) {
+        alert("Google login failed: " + (data.message || 'Unknown error'));
+        return;
+      }
+
+      const payload = parseJwt(data.token);
+      if (!payload) {
+        alert('Invalid token received.');
+        return;
+      }
+
+      redirectByRole(payload.role, data.token);
+    } catch (err) {
+      console.error(err);
+      alert("Google login error: " + err.message);
+    }
+  }
+
+  // Attach Google callback to global scope
+  window.handleGoogleLogin = handleGoogleLogin;
+</script>
 
 
-  </script>
 </body>
 </html>
