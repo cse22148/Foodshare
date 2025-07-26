@@ -150,10 +150,10 @@ function redirectByRole(role, token) {
   console.log("User role detected:", role);
   localStorage.setItem('token', token);
 
-  // Handle missing or null role properly
-  if (!role || role === null || role === undefined || role === '') {
+  // ✅ Catch all invalid role cases
+  if (!role || role === null || role === undefined || role === '' || role === 'null') {
     console.log("Redirecting to role selection...");
-    window.location.href = '/select-role.html'; // ✅ Make sure this is correct path
+    window.location.href = '/select-role.html';
     return;
   }
 
@@ -176,6 +176,7 @@ function redirectByRole(role, token) {
       alert("Unknown role. Please contact support.");
   }
 }
+
 
 
 
