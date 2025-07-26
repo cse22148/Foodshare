@@ -146,29 +146,38 @@
       return null;
     }
   }
+function redirectByRole(role, token) {
+  console.log("User role detected:", role);
+  localStorage.setItem('token', token);
 
-  // Redirect logic based on role
-  function redirectByRole(role, token) {
-    localStorage.setItem('token', token);
-    localStorage.setItem('role', role || '');
-
-    switch (role) {
-      case 'donor':
-        localStorage.setItem('donor_token', token);
-        window.location.href = '/donor-dashboard.html';
-        break;
-      case 'ngo':
-        localStorage.setItem('ngo_token', token);
-        window.location.href = '/ngo-dashboard.html';
-        break;
-      case 'biogas':
-        localStorage.setItem('biogas_token', token);
-        window.location.href = '/biogas-dashboard.html';
-        break;
-      default:
-        window.location.href = '/selectrole.html';  // ✅ fix this path if needed
-    }
+  // Handle missing or null role properly
+  if (!role || role === null || role === undefined || role === '') {
+    console.log("Redirecting to role selection...");
+    window.location.href = '/select-role.html'; // ✅ Make sure this is correct path
+    return;
   }
+
+  localStorage.setItem('role', role);
+
+  switch (role) {
+    case 'donor':
+      localStorage.setItem('donor_token', token);
+      window.location.href = '/donor-dashboard.html';
+      break;
+    case 'ngo':
+      localStorage.setItem('ngo_token', token);
+      window.location.href = '/ngo-dashboard.html';
+      break;
+    case 'biogas':
+      localStorage.setItem('biogas_token', token);
+      window.location.href = '/biogas-dashboard.html';
+      break;
+    default:
+      alert("Unknown role. Please contact support.");
+  }
+}
+
+
 
   // Email login handler
   const loginForm = document.getElementById('loginForm');
